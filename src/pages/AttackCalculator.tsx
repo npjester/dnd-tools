@@ -33,6 +33,47 @@ import { formatDice, simulateAttack } from '../utils/dice';
 
 const MAX_DISPLAYED_ROLLS = 100;
 
+interface SliderWithInputProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  marks: { value: number; label: string }[];
+  onChange: (value: number) => void;
+}
+
+function SliderWithInput({ label, value, min, max, step, marks, onChange }: SliderWithInputProps) {
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+        <Typography>{label}</Typography>
+        <TextField
+          type="number"
+          value={value}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            if (!isNaN(v)) {
+              onChange(Math.max(min, Math.min(max, v)));
+            }
+          }}
+          size="small"
+          slotProps={{ htmlInput: { min, max, step } }}
+          sx={{ width: 80 }}
+        />
+      </Stack>
+      <Slider
+        value={value}
+        onChange={(_, v) => onChange(v as number)}
+        min={min}
+        max={max}
+        step={step}
+        marks={marks}
+      />
+    </Box>
+  );
+}
+
 function runSimulation(
   creatureCount: number,
   attacksPerCreature: number,
@@ -268,12 +309,9 @@ export default function AttackCalculator() {
             </Typography>
 
             {/* Creature count */}
-            <Typography gutterBottom>
-              Number of Creatures: <strong>{creatureCount}</strong>
-            </Typography>
-            <Slider
+            <SliderWithInput
+              label="Number of Creatures"
               value={creatureCount}
-              onChange={(_, v) => setCreatureCount(v as number)}
               min={1}
               max={100}
               step={1}
@@ -284,16 +322,13 @@ export default function AttackCalculator() {
                 { value: 75, label: '75' },
                 { value: 100, label: '100' },
               ]}
-              sx={{ mb: 3 }}
+              onChange={setCreatureCount}
             />
 
             {/* Attacks per creature */}
-            <Typography gutterBottom>
-              Attacks per Creature: <strong>{attacksPerCreature}</strong>
-            </Typography>
-            <Slider
+            <SliderWithInput
+              label="Attacks per Creature"
               value={attacksPerCreature}
-              onChange={(_, v) => setAttacksPerCreature(v as number)}
               min={1}
               max={5}
               step={1}
@@ -304,16 +339,13 @@ export default function AttackCalculator() {
                 { value: 4, label: '4' },
                 { value: 5, label: '5' },
               ]}
-              sx={{ mb: 3 }}
+              onChange={setAttacksPerCreature}
             />
 
             {/* Armor class */}
-            <Typography gutterBottom>
-              Target Armor Class (AC): <strong>{armorClass}</strong>
-            </Typography>
-            <Slider
+            <SliderWithInput
+              label="Target Armor Class (AC)"
               value={armorClass}
-              onChange={(_, v) => setArmorClass(v as number)}
               min={1}
               max={30}
               step={1}
@@ -324,7 +356,7 @@ export default function AttackCalculator() {
                 { value: 20, label: '20' },
                 { value: 30, label: '30' },
               ]}
-              sx={{ mb: 3 }}
+              onChange={setArmorClass}
             />
 
             <Button
@@ -419,8 +451,8 @@ export default function AttackCalculator() {
                   </Alert>
                 )}
 
-                <TableContainer sx={{ maxHeight: 400 }}>
-                  <Table size="small" stickyHeader>
+                <TableContainer>
+                  <Table size="small">
                     <TableHead>
                       <TableRow>
                         <TableCell>#</TableCell>
