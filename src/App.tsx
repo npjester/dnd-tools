@@ -14,6 +14,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import Home from './pages/Home';
 import AttackCalculator from './pages/AttackCalculator';
+import LegendaryActions from './pages/LegendaryActions';
 
 function App() {
   const [mode, setMode] = useState<'dark' | 'light'>('dark');
@@ -68,6 +69,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/attack-calculator" element={<AttackCalculator />} />
+          <Route path="/legendary-actions" element={<LegendaryActions />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

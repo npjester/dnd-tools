@@ -1,5 +1,6 @@
 import { Box, Card, CardActionArea, CardContent, Grid, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CasinoIcon from '@mui/icons-material/Casino';
 
 interface ToolEntry {
@@ -16,6 +17,13 @@ const tools: ToolEntry[] = [
       'Simulate attacks for a horde of creatures. Calculate hits and total damage against a target armor class.',
     path: '/attack-calculator',
     icon: <CasinoIcon sx={{ fontSize: 64, color: 'error.main' }} />,
+  },
+  {
+    title: 'Legendary Actions Tracker',
+    description:
+      'Track legendary actions for multiple creatures during combat. Mark used actions, reset per creature or all at once.',
+    path: '/legendary-actions',
+    icon: <AutoAwesomeIcon sx={{ fontSize: 64, color: 'secondary.main' }} />,
   },
 ];
 
