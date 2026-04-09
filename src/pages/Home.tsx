@@ -2,6 +2,7 @@ import { Box, Card, CardActionArea, CardContent, Grid, Typography } from '@mui/m
 import { useNavigate } from 'react-router-dom';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CasinoIcon from '@mui/icons-material/Casino';
+import ShieldIcon from '@mui/icons-material/Shield';
 
 interface ToolEntry {
   title: string;
@@ -24,6 +25,13 @@ const tools: ToolEntry[] = [
       'Track legendary actions for multiple creatures during combat. Mark used actions, reset per creature or all at once.',
     path: '/legendary-actions',
     icon: <AutoAwesomeIcon sx={{ fontSize: 64, color: 'secondary.main' }} />,
+  },
+  {
+    title: 'Save Calculator',
+    description:
+      'Roll saving throws for a group of monsters against a target DC. Set the number of monsters, the DC, and an optional save bonus.',
+    path: '/save-calculator',
+    icon: <ShieldIcon sx={{ fontSize: 64, color: 'primary.main' }} />,
   },
 ];
 

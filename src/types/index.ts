@@ -38,3 +38,23 @@ export interface AttackResults {
   rolls: IndividualAttackRoll[];
 }
 
+export interface IndividualSaveRoll {
+  d20Roll: number;
+  saveBonus: number;
+  total: number;
+  success: boolean;
+  naturalTwenty: boolean;
+  naturalOne: boolean;
+}
+
+export interface SaveResults {
+  totalCreatures: number;
+  saveDC: number;
+  saveBonus: number;
+  successes: number;
+  failures: number;
+  naturalTwenties: number;
+  naturalOnes: number;
+  rolls: IndividualSaveRoll[];
+}
+
