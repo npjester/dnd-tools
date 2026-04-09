@@ -242,7 +242,7 @@ export default function SaveCalculator() {
                   Summary
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {results.totalCreatures} monster{results.totalCreatures !== 1 ? 's' : ''} rolling
+                  {results.totalCreatures} monster{results.totalCreatures !== 1 ? 's' : ''} making
                   a saving throw (save bonus: <strong>{saveBonusLabel}</strong>) against DC{' '}
                   <strong>{results.saveDC}</strong>
                 </Typography>
@@ -339,19 +339,20 @@ export default function SaveCalculator() {
                                     : ''
                               }
                             >
-                              <span
-                                style={{
+                              <Box
+                                component="span"
+                                sx={{
                                   fontWeight:
                                     roll.naturalTwenty || roll.naturalOne ? 700 : 400,
                                   color: roll.naturalTwenty
-                                    ? '#ed6c02'
+                                    ? 'warning.main'
                                     : roll.naturalOne
-                                      ? '#d32f2f'
+                                      ? 'error.main'
                                       : 'inherit',
                                 }}
                               >
                                 {roll.d20Roll}
-                              </span>
+                              </Box>
                             </Tooltip>
                           </TableCell>
                           <TableCell align="center">
