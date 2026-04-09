@@ -1,4 +1,4 @@
-import type { DiceRoll, IndividualAttackRoll } from '../types';
+import type { DiceRoll, IndividualAttackRoll, IndividualSaveRoll } from '../types';
 
 /**
  * Roll a single die with the given number of sides.
@@ -74,4 +74,25 @@ export function formatDice(diceRoll: DiceRoll): string {
   if (diceRoll.modifier === 0) return base;
   if (diceRoll.modifier > 0) return `${base}+${diceRoll.modifier}`;
   return `${base}${diceRoll.modifier}`;
+}
+
+/**
+ * Simulate a single saving throw against a given DC.
+ * A natural 20 always succeeds; a natural 1 always fails.
+ */
+export function simulateSave(saveBonus: number, saveDC: number): IndividualSaveRoll {
+  const d20Roll = rollDie(20);
+  const total = d20Roll + saveBonus;
+  const naturalTwenty = d20Roll === 20;
+  const naturalOne = d20Roll === 1;
+  const success = naturalTwenty || (!naturalOne && total >= saveDC);
+
+  return {
+    d20Roll,
+    saveBonus,
+    total,
+    success,
+    naturalTwenty,
+    naturalOne,
+  };
 }

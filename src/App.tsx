@@ -15,6 +15,7 @@ import { useMemo, useState } from 'react';
 import Home from './pages/Home';
 import AttackCalculator from './pages/AttackCalculator';
 import LegendaryActions from './pages/LegendaryActions';
+import SaveCalculator from './pages/SaveCalculator';
 
 function App() {
   const [mode, setMode] = useState<'dark' | 'light'>('dark');
@@ -70,6 +71,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/attack-calculator" element={<AttackCalculator />} />
           <Route path="/legendary-actions" element={<LegendaryActions />} />
+          <Route path="/save-calculator" element={<SaveCalculator />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
