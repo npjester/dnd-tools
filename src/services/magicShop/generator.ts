@@ -48,6 +48,16 @@ export const SHOP_PROFILES: ShopProfile[] = [
   },
 ];
 
+const RARITY_SORT_ORDER: Record<MagicRarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  'very rare': 3,
+  legendary: 4,
+  artifact: 5,
+  varies: 6,
+};
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -210,6 +220,7 @@ export function generateShopInventory(request: GenerationRequest): GeneratedInve
 
   let safety = 0;
   while (inventory.length < targetStock && safety < 2000) {
+    // Prevents infinite loops when selection constraints are strict and repeated picks are skipped.
     safety += 1;
     const picked = weightedPick(eligible, (item) => profile.rarityWeights[item.rarity] ?? 1, rng);
     if (!picked) break;
@@ -241,7 +252,12 @@ export function generateShopInventory(request: GenerationRequest): GeneratedInve
   }
 
   return inventory.sort((a, b) => {
-    if (a.rarity === b.rarity) return a.itemName.localeCompare(b.itemName);
-    return a.effectiveUnitPriceGp - b.effectiveUnitPriceGp;
+    const rarityDelta = RARITY_SORT_ORDER[a.rarity] - RARITY_SORT_ORDER[b.rarity];
+    if (rarityDelta !== 0) return rarityDelta;
+
+    const priceDelta = a.effectiveUnitPriceGp - b.effectiveUnitPriceGp;
+    if (priceDelta !== 0) return priceDelta;
+
+    return a.itemName.localeCompare(b.itemName);
   });
 }

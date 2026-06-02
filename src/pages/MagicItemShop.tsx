@@ -219,6 +219,7 @@ function RuleEditor({
           size="small"
           value={draft.itemId}
           onChange={(e) => setDraft((prev) => ({ ...prev, itemId: e.target.value }))}
+          helperText="Use normalized item id, e.g. potion-of-healing"
         />
       </Stack>
 
@@ -267,6 +268,7 @@ export default function MagicItemShop() {
   const [townName, setTownName] = useState('');
   const [shopName, setShopName] = useState('');
   const [shopProfileId, setShopProfileId] = useState<ShopNode['profileId']>('trade_town');
+  const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedCampaign = state.campaigns.find((campaign) => campaign.id === state.selectedCampaignId) ?? null;
@@ -324,11 +326,12 @@ export default function MagicItemShop() {
 
   function addTown() {
     const name = townName.trim();
-    if (!name || !state.selectedCampaignId) return;
+    const campaignId = state.selectedCampaignId;
+    if (!name || !campaignId) return;
     const id = createId('town');
     setState((prev) => ({
       ...prev,
-      towns: [...prev.towns, { id, campaignId: prev.selectedCampaignId!, name, pricing: { rules: [] } }],
+      towns: [...prev.towns, { id, campaignId, name, pricing: { rules: [] } }],
       selectedTownId: id,
       selectedShopId: null,
     }));
@@ -337,7 +340,8 @@ export default function MagicItemShop() {
 
   function addShop() {
     const name = shopName.trim();
-    if (!name || !state.selectedTownId) return;
+    const townId = state.selectedTownId;
+    if (!name || !townId) return;
     const id = createId('shop');
     setState((prev) => ({
       ...prev,
@@ -345,7 +349,7 @@ export default function MagicItemShop() {
         ...prev.shops,
         {
           id,
-          townId: prev.selectedTownId!,
+          townId,
           name,
           profileId: shopProfileId,
           pricing: { rules: [] },
@@ -416,9 +420,13 @@ export default function MagicItemShop() {
       const text = await file.text();
       const imported = importMagicShopState(text);
       setState(imported);
-    } catch {
-      // no-op, handled with alert below
-      alert('Invalid import file.');
+      setImportError(null);
+    } catch (error) {
+      const message =
+        error instanceof SyntaxError
+          ? 'Import failed: invalid JSON format.'
+          : 'Import failed: file is not a compatible magic shop export.';
+      setImportError(message);
     }
   }
 
@@ -452,12 +460,18 @@ export default function MagicItemShop() {
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
+              setImportError(null);
               void handleImportFile(file);
             }
             e.currentTarget.value = '';
           }}
         />
       </Stack>
+      {importError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setImportError(null)}>
+          {importError}
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 4 }}>
