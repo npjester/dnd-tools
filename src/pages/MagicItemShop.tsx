@@ -461,7 +461,10 @@ export default function MagicItemShop() {
             const file = e.target.files?.[0];
             if (file) {
               setImportError(null);
-              void handleImportFile(file);
+              void handleImportFile(file).catch((error: unknown) => {
+                const message = error instanceof Error ? error.message : 'Unexpected import failure.';
+                setImportError(message);
+              });
             }
             e.currentTarget.value = '';
           }}
