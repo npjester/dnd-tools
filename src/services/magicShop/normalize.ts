@@ -10,6 +10,7 @@ const RARITY_BASELINE_GP: Record<MagicRarity, number> = {
   artifact: 250000,
   varies: 250,
 };
+const COPPER_TO_GOLD_RATIO = 100;
 
 function normalizeRarity(rarity?: string): MagicRarity {
   if (!rarity) return 'varies';
@@ -41,7 +42,7 @@ function normalizeItem(raw: RawMagicItem): MagicItem {
     typeof raw.valueGp === 'number'
       ? raw.valueGp
       : typeof raw.valueCp === 'number'
-        ? raw.valueCp / 100
+        ? raw.valueCp / COPPER_TO_GOLD_RATIO
         : RARITY_BASELINE_GP[rarity];
 
   return {

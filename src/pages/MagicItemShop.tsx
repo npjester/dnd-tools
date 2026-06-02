@@ -424,8 +424,8 @@ export default function MagicItemShop() {
     } catch (error) {
       const message =
         error instanceof SyntaxError
-          ? 'Import failed: invalid JSON format.'
-          : 'Import failed: file is not a compatible magic shop export.';
+          ? 'Import failed: invalid JSON format. Please provide a valid JSON export from this tool.'
+          : 'Import failed: file structure is not compatible. Export a fresh file from this tool and try again.';
       setImportError(message);
     }
   }

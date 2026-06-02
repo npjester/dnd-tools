@@ -62,6 +62,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+function roundGp(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 function hashSeed(input: string): number {
   let h = 1779033703 ^ input.length;
   for (let i = 0; i < input.length; i++) {
@@ -162,7 +166,7 @@ export function calculateEffectivePrice(
   }
 
   return {
-    effectiveUnitPriceGp: Math.round(current * 100) / 100,
+    effectiveUnitPriceGp: roundGp(current),
     priceSource,
     appliedOverrides,
   };
@@ -220,7 +224,7 @@ export function generateShopInventory(request: GenerationRequest): GeneratedInve
 
   let safety = 0;
   while (inventory.length < targetStock && safety < 2000) {
-    // Prevents infinite loops when selection constraints are strict and repeated picks are skipped.
+    // Safety cap: allows many retry attempts when duplicates are skipped while still avoiding infinite loops.
     safety += 1;
     const picked = weightedPick(eligible, (item) => profile.rarityWeights[item.rarity] ?? 1, rng);
     if (!picked) break;
@@ -243,7 +247,7 @@ export function generateShopInventory(request: GenerationRequest): GeneratedInve
       quantity,
       baseUnitPriceGp: picked.basePriceGp,
       effectiveUnitPriceGp: price.effectiveUnitPriceGp,
-      totalPriceGp: Math.round(quantity * price.effectiveUnitPriceGp * 100) / 100,
+      totalPriceGp: roundGp(quantity * price.effectiveUnitPriceGp),
       priceSource: price.priceSource,
       appliedOverrides: price.appliedOverrides,
     });

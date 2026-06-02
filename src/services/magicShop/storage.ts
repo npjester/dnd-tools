@@ -72,7 +72,11 @@ export function loadMagicShopState(): MagicShopState {
   if (!raw) return createDefaultShopState();
 
   try {
-    const parsed = JSON.parse(raw) as Partial<MagicShopState>;
+    const parsedUnknown = JSON.parse(raw) as unknown;
+    if (!parsedUnknown || typeof parsedUnknown !== 'object') {
+      return createDefaultShopState();
+    }
+    const parsed = parsedUnknown as Partial<MagicShopState>;
     return withDefaults(parsed);
   } catch {
     return createDefaultShopState();
