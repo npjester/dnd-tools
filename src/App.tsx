@@ -16,6 +16,7 @@ import Home from './pages/Home';
 import AttackCalculator from './pages/AttackCalculator';
 import LegendaryActions from './pages/LegendaryActions';
 import SaveCalculator from './pages/SaveCalculator';
+import MagicItemShop from './pages/MagicItemShop';
 
 function App() {
   const [mode, setMode] = useState<'dark' | 'light'>('dark');
@@ -72,6 +73,7 @@ function App() {
           <Route path="/attack-calculator" element={<AttackCalculator />} />
           <Route path="/legendary-actions" element={<LegendaryActions />} />
           <Route path="/save-calculator" element={<SaveCalculator />} />
+          <Route path="/magic-item-shop" element={<MagicItemShop />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

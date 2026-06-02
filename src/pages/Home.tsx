@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CasinoIcon from '@mui/icons-material/Casino';
 import ShieldIcon from '@mui/icons-material/Shield';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 
 interface ToolEntry {
   title: string;
@@ -32,6 +33,13 @@ const tools: ToolEntry[] = [
       'Roll saving throws for a group of monsters against a target DC. Set the number of monsters, the DC, and an optional save bonus.',
     path: '/save-calculator',
     icon: <ShieldIcon sx={{ fontSize: 64, color: 'primary.main' }} />,
+  },
+  {
+    title: 'Magic Item Shop Generator',
+    description:
+      'Generate magic-item inventories with user/campaign/town/shop taxonomy and layered price overrides.',
+    path: '/magic-item-shop',
+    icon: <StorefrontIcon sx={{ fontSize: 64, color: 'success.main' }} />,
   },
 ];
 

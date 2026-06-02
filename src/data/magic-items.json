@@ -1,0 +1,20 @@
+[
+  { "name": "Potion of Healing", "rarity": "common", "type": "potion", "source": "DMG", "valueGp": 50, "tags": ["healing", "consumable"] },
+  { "name": "Spell Scroll (Cantrip)", "rarity": "common", "type": "scroll", "source": "DMG", "valueGp": 25, "tags": ["consumable", "arcane"] },
+  { "name": "Spell Scroll (1st Level)", "rarity": "common", "type": "scroll", "source": "DMG", "valueGp": 75, "tags": ["consumable", "arcane"] },
+  { "name": "Bag of Holding", "rarity": "uncommon", "type": "wondrous item", "source": "DMG", "valueGp": 400, "tags": ["utility"] },
+  { "name": "Cloak of Protection", "rarity": "uncommon", "type": "wondrous item", "source": "DMG", "valueGp": 500, "tags": ["defense"] },
+  { "name": "+1 Weapon", "rarity": "uncommon", "type": "weapon", "source": "DMG", "valueGp": 650, "tags": ["weapon"] },
+  { "name": "Boots of Elvenkind", "rarity": "uncommon", "type": "wondrous item", "source": "DMG", "valueGp": 450, "tags": ["stealth"] },
+  { "name": "Immovable Rod", "rarity": "uncommon", "type": "rod", "source": "DMG", "valueGp": 700, "tags": ["utility"] },
+  { "name": "Pearl of Power", "rarity": "uncommon", "type": "wondrous item", "source": "DMG", "valueGp": 800, "tags": ["arcane"] },
+  { "name": "Flame Tongue", "rarity": "rare", "type": "weapon", "source": "DMG", "valueGp": 3500, "tags": ["weapon", "fire"] },
+  { "name": "Amulet of Health", "rarity": "rare", "type": "wondrous item", "source": "DMG", "valueGp": 3000, "tags": ["defense"] },
+  { "name": "Ring of Evasion", "rarity": "rare", "type": "ring", "source": "DMG", "valueGp": 3200, "tags": ["defense"] },
+  { "name": "Ring of Spell Storing", "rarity": "rare", "type": "ring", "source": "DMG", "valueGp": 5000, "tags": ["arcane"] },
+  { "name": "Staff of Frost", "rarity": "very rare", "type": "staff", "source": "DMG", "valueGp": 12000, "tags": ["arcane", "cold"] },
+  { "name": "Belt of Fire Giant Strength", "rarity": "very rare", "type": "wondrous item", "source": "DMG", "valueGp": 18000, "tags": ["strength"] },
+  { "name": "Tome of Leadership and Influence", "rarity": "very rare", "type": "wondrous item", "source": "DMG", "valueGp": 22000, "tags": ["charisma"] },
+  { "name": "Vorpal Sword", "rarity": "legendary", "type": "weapon", "source": "DMG", "valueGp": 50000, "tags": ["weapon"] },
+  { "name": "Holy Avenger", "rarity": "legendary", "type": "weapon", "source": "DMG", "valueGp": 60000, "tags": ["weapon", "holy"] }
+]
