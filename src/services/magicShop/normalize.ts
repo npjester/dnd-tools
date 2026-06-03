@@ -52,6 +52,7 @@ function normalizeItem(raw: RawMagicItem): MagicItem {
     type: raw.type?.trim().toLowerCase() ?? 'wondrous item',
     source: raw.source?.trim().toUpperCase() ?? 'UNKNOWN',
     basePriceGp,
+    description: raw.description?.trim() ?? '',
     tags: (raw.tags ?? []).map((tag) => tag.trim().toLowerCase()),
     metadata: {
       sourceName: raw.source?.trim().toUpperCase() ?? 'UNKNOWN',
@@ -66,4 +67,15 @@ export function normalizeMagicItems(rawItems: RawMagicItem[]): MagicItem[] {
 
 export function getNormalizedMagicItems(): MagicItem[] {
   return normalizeMagicItems(rawMagicItems as RawMagicItem[]);
+}
+
+/**
+ * Returns the full item pool: built-in items merged with user-added custom items.
+ * Custom items with the same id as a built-in item take precedence (override).
+ */
+export function getAllItems(customItems: MagicItem[]): MagicItem[] {
+  const builtIn = getNormalizedMagicItems();
+  const customById = new Map(customItems.map((item) => [item.id, item]));
+  const merged = builtIn.filter((item) => !customById.has(item.id));
+  return [...merged, ...customItems];
 }

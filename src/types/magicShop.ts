@@ -12,6 +12,7 @@ export interface RawMagicItem {
   rarity?: string;
   type?: string;
   source?: string;
+  description?: string;
   valueCp?: number;
   valueGp?: number;
   tags?: string[];
@@ -24,6 +25,7 @@ export interface MagicItem {
   type: string;
   source: string;
   basePriceGp: number;
+  description: string;
   tags: string[];
   metadata: {
     sourceName: string;
@@ -132,6 +134,7 @@ export interface MagicShopState {
   campaigns: CampaignNode[];
   towns: TownNode[];
   shops: ShopNode[];
+  customItems: MagicItem[];
   selectedCampaignId: string | null;
   selectedTownId: string | null;
   selectedShopId: string | null;

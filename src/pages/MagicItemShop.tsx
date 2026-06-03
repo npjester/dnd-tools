@@ -24,6 +24,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DownloadIcon from '@mui/icons-material/Download';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import AddIcon from '@mui/icons-material/Add';
@@ -38,7 +39,7 @@ import type {
   PricingPolicy,
   ShopNode,
 } from '../types/magicShop';
-import { getNormalizedMagicItems } from '../services/magicShop/normalize';
+import { getAllItems } from '../services/magicShop/normalize';
 import { generateShopInventory, SHOP_PROFILES } from '../services/magicShop/generator';
 import {
   createDefaultShopState,
@@ -47,6 +48,7 @@ import {
   loadMagicShopState,
   saveMagicShopState,
 } from '../services/magicShop/storage';
+import ItemLibraryModal from '../components/ItemLibraryModal';
 
 const RARITY_OPTIONS: MagicRarity[] = [
   'common',
@@ -261,14 +263,15 @@ function RuleEditor({
 
 export default function MagicItemShop() {
   const navigate = useNavigate();
-  const items = useMemo(() => getNormalizedMagicItems(), []);
 
   const [state, setState] = useState(() => loadMagicShopState());
+  const items = useMemo(() => getAllItems(state.customItems), [state.customItems]);
   const [campaignName, setCampaignName] = useState('');
   const [townName, setTownName] = useState('');
   const [shopName, setShopName] = useState('');
   const [shopProfileId, setShopProfileId] = useState<ShopNode['profileId']>('trade_town');
   const [importError, setImportError] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedCampaign = state.campaigns.find((campaign) => campaign.id === state.selectedCampaignId) ?? null;
@@ -439,6 +442,14 @@ export default function MagicItemShop() {
         <Typography variant="h4" fontWeight={700} sx={{ flexGrow: 1 }}>
           🏪 Magic Item Shop Generator
         </Typography>
+        <Button
+          startIcon={<LibraryBooksIcon />}
+          variant="outlined"
+          color="secondary"
+          onClick={() => setLibraryOpen(true)}
+        >
+          Item Library ({state.customItems.length})
+        </Button>
         <Button startIcon={<DownloadIcon />} variant="outlined" onClick={downloadExport}>
           Export JSON
         </Button>
@@ -470,6 +481,14 @@ export default function MagicItemShop() {
           }}
         />
       </Stack>
+
+      <ItemLibraryModal
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        customItems={state.customItems}
+        onChange={(customItems) => setState((prev) => ({ ...prev, customItems }))}
+      />
+
       {importError && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setImportError(null)}>
           {importError}
@@ -700,6 +719,56 @@ export default function MagicItemShop() {
                     );
                   })}
                 </Stack>
+
+                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                  <InputLabel id="type-filter">Item Type Filter</InputLabel>
+                  <Select
+                    labelId="type-filter"
+                    label="Item Type Filter"
+                    multiple
+                    value={selectedShop.generationRules.itemTypes}
+                    onChange={(e) =>
+                      updateShop((shop) => ({
+                        ...shop,
+                        generationRules: {
+                          ...shop.generationRules,
+                          itemTypes: e.target.value as string[],
+                        },
+                      }))
+                    }
+                  >
+                    {availableTypes.map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                  <InputLabel id="tag-filter">Tag Filter</InputLabel>
+                  <Select
+                    labelId="tag-filter"
+                    label="Tag Filter"
+                    multiple
+                    value={selectedShop.generationRules.tags}
+                    onChange={(e) =>
+                      updateShop((shop) => ({
+                        ...shop,
+                        generationRules: {
+                          ...shop.generationRules,
+                          tags: e.target.value as string[],
+                        },
+                      }))
+                    }
+                  >
+                    {availableTags.map((tag) => (
+                      <MenuItem key={tag} value={tag}>
+                        {tag}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
                 <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                   <InputLabel id="source-filter">Source Filter</InputLabel>
