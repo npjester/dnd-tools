@@ -2,6 +2,8 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 
 const PORT = Number(process.env.SHARE_SERVER_PORT ?? 8787);
+const MAX_PAYLOAD_SIZE = 2_000_000;
+// Intentionally in-memory only for now: share snapshots are lost whenever this process restarts.
 const shares = new Map();
 
 function sendJson(res, statusCode, body) {
@@ -19,7 +21,7 @@ function readJson(req) {
     let raw = '';
     req.on('data', (chunk) => {
       raw += chunk;
-      if (raw.length > 2_000_000) {
+      if (raw.length > MAX_PAYLOAD_SIZE) {
         reject(new Error('Payload too large.'));
       }
     });
@@ -82,6 +84,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`Magic shop share server listening on http://localhost:${PORT}`);
 });
