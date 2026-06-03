@@ -7,6 +7,7 @@ import {
 } from '../services/magicShop/generator';
 import { getAllItems, getNormalizedMagicItems } from '../services/magicShop/normalize';
 import {
+  buildMagicShopSharePath,
   buildMagicShopPath,
   MAGIC_SHOP_LINK_UNAVAILABLE_MESSAGE,
   resolveMagicShopRouteSelection,
@@ -162,6 +163,7 @@ describe('magic shop routing helpers', () => {
     expect(buildMagicShopPath({ campaignId: 'camp-1', townId: 'town-1', shopId: 'shop-1' })).toBe(
       '/magic-item-shop/town/town-1/shop/shop-1',
     );
+    expect(buildMagicShopSharePath('share-1')).toBe('/magic-item-shop/shared/share-1');
   });
 
   it('sanitizes nested selections from shop ancestry', () => {

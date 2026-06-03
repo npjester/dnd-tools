@@ -7,6 +7,7 @@ export interface MagicShopSelection {
 }
 
 export interface MagicShopRouteParams {
+  shareId?: string;
   campaignId?: string;
   townId?: string;
   shopId?: string;
@@ -18,10 +19,10 @@ export interface MagicShopRouteResolution {
 }
 
 export const MAGIC_SHOP_LINK_VISIBILITY_MESSAGE =
-  'Shared campaign and shop links only resolve against data already stored in this browser. Other users need to import the same JSON export before opening the link.';
+  'Campaign and shop links resolve against data stored in this browser. Use Share Snapshot to generate a cross-browser view link.';
 
 export const MAGIC_SHOP_LINK_UNAVAILABLE_MESSAGE =
-  'This campaign, town, or shop is not available in the current browser. Import the matching JSON export, then reopen the link.';
+  'This campaign, town, or shop is not available in the current browser. Open a shared snapshot link or import the matching JSON export, then reopen the link.';
 
 function findCampaign(state: MagicShopState, campaignId: string | null | undefined) {
   return campaignId ? state.campaigns.find((campaign) => campaign.id === campaignId) ?? null : null;
@@ -131,4 +132,8 @@ export function buildMagicShopPath(selection: MagicShopSelection): string {
   }
 
   return '/magic-item-shop';
+}
+
+export function buildMagicShopSharePath(shareId: string): string {
+  return `/magic-item-shop/shared/${encodeURIComponent(shareId)}`;
 }
