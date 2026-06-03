@@ -30,7 +30,7 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import type {
   MagicRarity,
@@ -48,6 +48,11 @@ import {
   loadMagicShopState,
   saveMagicShopState,
 } from '../services/magicShop/storage';
+import {
+  buildMagicShopPath,
+  MAGIC_SHOP_LINK_VISIBILITY_MESSAGE,
+  resolveMagicShopRouteSelection,
+} from '../services/magicShop/routing';
 import ItemLibraryModal from '../components/ItemLibraryModal';
 
 const RARITY_OPTIONS: MagicRarity[] = [
@@ -262,7 +267,9 @@ function RuleEditor({
 }
 
 export default function MagicItemShop() {
+  const location = useLocation();
   const navigate = useNavigate();
+  const params = useParams<{ campaignId?: string; townId?: string; shopId?: string }>();
 
   const [state, setState] = useState(() => loadMagicShopState());
   const items = useMemo(() => getAllItems(state.customItems), [state.customItems]);
@@ -274,18 +281,32 @@ export default function MagicItemShop() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const selectedCampaign = state.campaigns.find((campaign) => campaign.id === state.selectedCampaignId) ?? null;
-  const selectedTown = state.towns.find((town) => town.id === state.selectedTownId) ?? null;
-  const selectedShop = state.shops.find((shop) => shop.id === state.selectedShopId) ?? null;
+  const routeSelection = useMemo(
+    () =>
+      resolveMagicShopRouteSelection(state, {
+        campaignId: params.campaignId,
+        townId: params.townId,
+        shopId: params.shopId,
+      }),
+    [params.campaignId, params.shopId, params.townId, state],
+  );
+
+  const selectedCampaignId = routeSelection.selection.campaignId;
+  const selectedTownId = routeSelection.selection.townId;
+  const selectedShopId = routeSelection.selection.shopId;
+
+  const selectedCampaign = state.campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
+  const selectedTown = state.towns.find((town) => town.id === selectedTownId) ?? null;
+  const selectedShop = state.shops.find((shop) => shop.id === selectedShopId) ?? null;
 
   const campaignTowns = useMemo(
-    () => state.towns.filter((town) => town.campaignId === state.selectedCampaignId),
-    [state.towns, state.selectedCampaignId],
+    () => state.towns.filter((town) => town.campaignId === selectedCampaignId),
+    [selectedCampaignId, state.towns],
   );
 
   const townShops = useMemo(
-    () => state.shops.filter((shop) => shop.townId === state.selectedTownId),
-    [state.shops, state.selectedTownId],
+    () => state.shops.filter((shop) => shop.townId === selectedTownId),
+    [selectedTownId, state.shops],
   );
 
   const availableTypes = useMemo(
@@ -304,6 +325,39 @@ export default function MagicItemShop() {
   useEffect(() => {
     saveMagicShopState(state);
   }, [state]);
+
+  useEffect(() => {
+    if (
+      selectedCampaignId === state.selectedCampaignId &&
+      selectedTownId === state.selectedTownId &&
+      selectedShopId === state.selectedShopId
+    ) {
+      return;
+    }
+
+    setState((prev) => ({
+      ...prev,
+      selectedCampaignId,
+      selectedTownId,
+      selectedShopId,
+    }));
+  }, [
+    selectedCampaignId,
+    selectedShopId,
+    selectedTownId,
+    state.selectedCampaignId,
+    state.selectedShopId,
+    state.selectedTownId,
+  ]);
+
+  useEffect(() => {
+    const nextPath = buildMagicShopPath(routeSelection.selection);
+    if (location.pathname === nextPath) {
+      return;
+    }
+
+    navigate(nextPath, { replace: true });
+  }, [location.pathname, navigate, routeSelection.selection]);
 
   function updateShop(updater: (shop: ShopNode) => ShopNode) {
     if (!selectedShop) return;
@@ -329,7 +383,7 @@ export default function MagicItemShop() {
 
   function addTown() {
     const name = townName.trim();
-    const campaignId = state.selectedCampaignId;
+    const campaignId = selectedCampaignId;
     if (!name || !campaignId) return;
     const id = createId('town');
     setState((prev) => ({
@@ -343,7 +397,7 @@ export default function MagicItemShop() {
 
   function addShop() {
     const name = shopName.trim();
-    const townId = state.selectedTownId;
+    const townId = selectedTownId;
     if (!name || !townId) return;
     const id = createId('shop');
     setState((prev) => ({
@@ -505,6 +559,14 @@ export default function MagicItemShop() {
               <Alert severity="info" sx={{ mb: 2 }}>
                 Hierarchy: User → Campaign → Town → Shop
               </Alert>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                {MAGIC_SHOP_LINK_VISIBILITY_MESSAGE}
+              </Alert>
+              {routeSelection.unavailableNotice && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  {routeSelection.unavailableNotice}
+                </Alert>
+              )}
 
               <Typography variant="subtitle2" paddingBottom={1}>Campaign</Typography>
               <FormControl fullWidth size="small" sx={{ mb: 1 }}>
@@ -512,7 +574,7 @@ export default function MagicItemShop() {
                 <Select
                   labelId="campaign-select-label"
                   label="Campaign"
-                  value={state.selectedCampaignId ?? ''}
+                  value={selectedCampaignId ?? ''}
                   onChange={(e) =>
                     setState((prev) => ({
                       ...prev,
@@ -548,9 +610,14 @@ export default function MagicItemShop() {
                 <Select
                   labelId="town-select-label"
                   label="Town"
-                  value={state.selectedTownId ?? ''}
+                  value={selectedTownId ?? ''}
                   onChange={(e) =>
-                    setState((prev) => ({ ...prev, selectedTownId: e.target.value, selectedShopId: null }))
+                    setState((prev) => ({
+                      ...prev,
+                      selectedCampaignId: selectedCampaign?.id ?? prev.selectedCampaignId,
+                      selectedTownId: e.target.value,
+                      selectedShopId: null,
+                    }))
                   }
                 >
                   {campaignTowns.map((town) => (
@@ -579,7 +646,7 @@ export default function MagicItemShop() {
                 <Select
                   labelId="shop-select-label"
                   label="Shop"
-                  value={state.selectedShopId ?? ''}
+                  value={selectedShopId ?? ''}
                   onChange={(e) => setState((prev) => ({ ...prev, selectedShopId: e.target.value }))}
                 >
                   {townShops.map((shop) => (
@@ -616,6 +683,20 @@ export default function MagicItemShop() {
                   Add
                 </Button>
               </Stack>
+              {selectedShop && (
+                 <TextField
+                   label="Direct shop link"
+                   size="small"
+                   fullWidth
+                   value={
+                     typeof window === 'undefined'
+                       ? buildMagicShopPath(routeSelection.selection)
+                       : `${window.location.origin}${buildMagicShopPath(routeSelection.selection)}`
+                   }
+                   slotProps={{ input: { readOnly: true } }}
+                   sx={{ mt: 2 }}
+                 />
+              )}
             </Paper>
 
             {selectedShop && (

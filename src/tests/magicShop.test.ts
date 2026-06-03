@@ -7,6 +7,12 @@ import {
 } from '../services/magicShop/generator';
 import { getAllItems, getNormalizedMagicItems } from '../services/magicShop/normalize';
 import {
+  buildMagicShopPath,
+  MAGIC_SHOP_LINK_UNAVAILABLE_MESSAGE,
+  resolveMagicShopRouteSelection,
+  sanitizeMagicShopSelection,
+} from '../services/magicShop/routing';
+import {
   createDefaultShopState,
   exportMagicShopState,
   importMagicShopState,
@@ -142,6 +148,66 @@ describe('magic shop storage serialization', () => {
     const oldPayload = JSON.stringify({ ...JSON.parse(payload) as object, customItems: undefined });
     const imported = importMagicShopState(oldPayload);
     expect(imported.customItems).toEqual([]);
+  });
+});
+
+describe('magic shop routing helpers', () => {
+  it('builds campaign, town, and direct shop paths', () => {
+    expect(buildMagicShopPath({ campaignId: 'camp-1', townId: null, shopId: null })).toBe(
+      '/magic-item-shop/campaign/camp-1',
+    );
+    expect(buildMagicShopPath({ campaignId: 'camp-1', townId: 'town-1', shopId: null })).toBe(
+      '/magic-item-shop/campaign/camp-1/town/town-1',
+    );
+    expect(buildMagicShopPath({ campaignId: 'camp-1', townId: 'town-1', shopId: 'shop-1' })).toBe(
+      '/magic-item-shop/town/town-1/shop/shop-1',
+    );
+  });
+
+  it('sanitizes nested selections from shop ancestry', () => {
+    const state = createDefaultShopState();
+
+    expect(
+      sanitizeMagicShopSelection(state, {
+        campaignId: null,
+        townId: null,
+        shopId: 'shop-default',
+      }),
+    ).toEqual({
+      campaignId: 'camp-default',
+      townId: 'town-default',
+      shopId: 'shop-default',
+    });
+  });
+
+  it('resolves direct shop routes when local data exists', () => {
+    const state = createDefaultShopState();
+    const result = resolveMagicShopRouteSelection(state, {
+      townId: 'town-default',
+      shopId: 'shop-default',
+    });
+
+    expect(result.unavailableNotice).toBeNull();
+    expect(result.selection).toEqual({
+      campaignId: 'camp-default',
+      townId: 'town-default',
+      shopId: 'shop-default',
+    });
+  });
+
+  it('warns when a linked shop is unavailable in the current browser', () => {
+    const state = createDefaultShopState();
+    const result = resolveMagicShopRouteSelection(state, {
+      townId: 'missing-town',
+      shopId: 'missing-shop',
+    });
+
+    expect(result.unavailableNotice).toBe(MAGIC_SHOP_LINK_UNAVAILABLE_MESSAGE);
+    expect(result.selection).toEqual({
+      campaignId: 'camp-default',
+      townId: 'town-default',
+      shopId: 'shop-default',
+    });
   });
 });
 

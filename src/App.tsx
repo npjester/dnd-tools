@@ -74,6 +74,9 @@ function App() {
           <Route path="/legendary-actions" element={<LegendaryActions />} />
           <Route path="/save-calculator" element={<SaveCalculator />} />
           <Route path="/magic-item-shop" element={<MagicItemShop />} />
+          <Route path="/magic-item-shop/campaign/:campaignId" element={<MagicItemShop />} />
+          <Route path="/magic-item-shop/campaign/:campaignId/town/:townId" element={<MagicItemShop />} />
+          <Route path="/magic-item-shop/town/:townId/shop/:shopId" element={<MagicItemShop />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
