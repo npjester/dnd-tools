@@ -321,43 +321,38 @@ export default function MagicItemShop() {
     () => Array.from(new Set(items.map((item) => item.source))).sort(),
     [items],
   );
+  const selectedPath = useMemo(
+    () =>
+      buildMagicShopPath({
+        campaignId: selectedCampaignId,
+        townId: selectedTownId,
+        shopId: selectedShopId,
+      }),
+    [selectedCampaignId, selectedShopId, selectedTownId],
+  );
+  const directShopLink = useMemo(() => {
+    if (!selectedShop) {
+      return '';
+    }
+
+    if (typeof window === 'undefined') {
+      return selectedPath;
+    }
+
+    return `${window.location.origin}${selectedPath}`;
+  }, [selectedPath, selectedShop]);
 
   useEffect(() => {
     saveMagicShopState(state);
   }, [state]);
 
   useEffect(() => {
-    if (
-      selectedCampaignId === state.selectedCampaignId &&
-      selectedTownId === state.selectedTownId &&
-      selectedShopId === state.selectedShopId
-    ) {
+    if (location.pathname === selectedPath) {
       return;
     }
 
-    setState((prev) => ({
-      ...prev,
-      selectedCampaignId,
-      selectedTownId,
-      selectedShopId,
-    }));
-  }, [
-    selectedCampaignId,
-    selectedShopId,
-    selectedTownId,
-    state.selectedCampaignId,
-    state.selectedShopId,
-    state.selectedTownId,
-  ]);
-
-  useEffect(() => {
-    const nextPath = buildMagicShopPath(routeSelection.selection);
-    if (location.pathname === nextPath) {
-      return;
-    }
-
-    navigate(nextPath, { replace: true });
-  }, [location.pathname, navigate, routeSelection.selection]);
+    navigate(selectedPath, { replace: true });
+  }, [location.pathname, navigate, selectedPath]);
 
   function updateShop(updater: (shop: ShopNode) => ShopNode) {
     if (!selectedShop) return;
@@ -688,11 +683,7 @@ export default function MagicItemShop() {
                    label="Direct shop link"
                    size="small"
                    fullWidth
-                   value={
-                     typeof window === 'undefined'
-                       ? buildMagicShopPath(routeSelection.selection)
-                       : `${window.location.origin}${buildMagicShopPath(routeSelection.selection)}`
-                   }
+                   value={directShopLink}
                    slotProps={{ input: { readOnly: true } }}
                    sx={{ mt: 2 }}
                  />
