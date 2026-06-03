@@ -280,6 +280,7 @@ export default function MagicItemShop() {
   const navigate = useNavigate();
   const params = useParams<{ shareId?: string; campaignId?: string; townId?: string; shopId?: string }>();
   const isSharedRoute = Boolean(params.shareId);
+  const isViewOnlyRoute = isSharedRoute || Boolean(params.campaignId || params.townId || params.shopId);
 
   const [state, setState] = useState(() => loadMagicShopState());
   const [sharedState, setSharedState] = useState<MagicShopState | null>(null);
@@ -403,7 +404,7 @@ export default function MagicItemShop() {
   }, [state]);
 
   useEffect(() => {
-    if (isSharedRoute) {
+    if (isViewOnlyRoute) {
       return;
     }
 
@@ -412,7 +413,7 @@ export default function MagicItemShop() {
     }
 
     navigate(selectedPath, { replace: true });
-  }, [isSharedRoute, location.pathname, navigate, selectedPath]);
+  }, [isViewOnlyRoute, location.pathname, navigate, selectedPath]);
 
   function updateShop(updater: (shop: ShopNode) => ShopNode) {
     if (!selectedShop) return;
@@ -576,6 +577,75 @@ export default function MagicItemShop() {
           : 'Import failed: file structure is not compatible. Export a fresh file from this tool and try again.';
       setImportError(message);
     }
+  }
+
+  if (isViewOnlyRoute) {
+    return (
+      <Box sx={{ py: 4, px: 3, maxWidth: 1300, mx: 'auto' }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+          <Button startIcon={<ArrowBackIcon />} variant="outlined" size="small" onClick={() => navigate('/')}>
+            Home
+          </Button>
+          <Typography variant="h4" fontWeight={700}>
+            🏪 Magic Item Shop
+          </Typography>
+        </Stack>
+
+        {isSharedRoute && (
+          <Alert
+            severity={sharedLoadError ? 'error' : 'info'}
+            sx={{ mb: 2 }}
+            action={
+              sharedState ? (
+                <Button color="inherit" size="small" onClick={importSharedIntoLocal}>
+                  Import to local
+                </Button>
+              ) : undefined
+            }
+          >
+            {isLoadingSharedState ? (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={16} />
+                <span>Loading shared snapshot…</span>
+              </Stack>
+            ) : sharedLoadError ? (
+              sharedLoadError
+            ) : (
+              'Viewing a shared snapshot in read-only mode.'
+            )}
+          </Alert>
+        )}
+
+        {routeSelection.unavailableNotice && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {routeSelection.unavailableNotice}
+          </Alert>
+        )}
+
+        <Paper sx={{ p: 2 }}>
+          <Stack spacing={1.5}>
+            <TextField
+              label="Campaign"
+              size="small"
+              value={selectedCampaign?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+            <TextField
+              label="Town"
+              size="small"
+              value={selectedTown?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+            <TextField
+              label="Shop"
+              size="small"
+              value={selectedShop?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+          </Stack>
+        </Paper>
+      </Box>
+    );
   }
 
   return (
