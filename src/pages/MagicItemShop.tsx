@@ -487,7 +487,7 @@ export default function MagicItemShop() {
                 Hierarchy: User → Campaign → Town → Shop
               </Alert>
 
-              <Typography variant="subtitle2">Campaign</Typography>
+              <Typography variant="subtitle2" paddingBottom={1}>Campaign</Typography>
               <FormControl fullWidth size="small" sx={{ mb: 1 }}>
                 <InputLabel id="campaign-select-label">Campaign</InputLabel>
                 <Select
@@ -523,7 +523,7 @@ export default function MagicItemShop() {
                 </Button>
               </Stack>
 
-              <Typography variant="subtitle2">Town</Typography>
+              <Typography variant="subtitle2" paddingBottom={1}>Town</Typography>
               <FormControl fullWidth size="small" sx={{ mb: 1 }}>
                 <InputLabel id="town-select-label">Town</InputLabel>
                 <Select
@@ -554,7 +554,7 @@ export default function MagicItemShop() {
                 </Button>
               </Stack>
 
-              <Typography variant="subtitle2">Shop</Typography>
+              <Typography variant="subtitle2" paddingBottom={1}>Shop</Typography>
               <FormControl fullWidth size="small" sx={{ mb: 1 }}>
                 <InputLabel id="shop-select-label">Shop</InputLabel>
                 <Select
