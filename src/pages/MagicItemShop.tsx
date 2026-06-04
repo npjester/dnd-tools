@@ -280,7 +280,6 @@ export default function MagicItemShop() {
   const navigate = useNavigate();
   const params = useParams<{ shareId?: string; campaignId?: string; townId?: string; shopId?: string }>();
   const isSharedRoute = Boolean(params.shareId);
-  const isViewOnlyRoute = isSharedRoute || Boolean(params.campaignId || params.townId || params.shopId);
 
   const [state, setState] = useState(() => loadMagicShopState());
   const [sharedState, setSharedState] = useState<MagicShopState | null>(null);
@@ -404,7 +403,7 @@ export default function MagicItemShop() {
   }, [state]);
 
   useEffect(() => {
-    if (isViewOnlyRoute) {
+    if (isSharedRoute) {
       return;
     }
 
@@ -413,7 +412,7 @@ export default function MagicItemShop() {
     }
 
     navigate(selectedPath, { replace: true });
-  }, [isViewOnlyRoute, location.pathname, navigate, selectedPath]);
+  }, [isSharedRoute, location.pathname, navigate, selectedPath]);
 
   function updateShop(updater: (shop: ShopNode) => ShopNode) {
     if (!selectedShop) return;
@@ -579,7 +578,7 @@ export default function MagicItemShop() {
     }
   }
 
-  if (isViewOnlyRoute) {
+  if (isSharedRoute) {
     return (
       <Box sx={{ py: 4, px: 3, maxWidth: 1300, mx: 'auto' }}>
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
