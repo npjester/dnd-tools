@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Chip,
   FormControl,
   Grid,
@@ -24,21 +25,24 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DownloadIcon from '@mui/icons-material/Download';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ShareIcon from '@mui/icons-material/Share';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import type {
   MagicRarity,
+  MagicShopState,
   PriceOverrideRule,
   PriceRuleAction,
   PricingPolicy,
   ShopNode,
 } from '../types/magicShop';
-import { getNormalizedMagicItems } from '../services/magicShop/normalize';
+import { getAllItems } from '../services/magicShop/normalize';
 import { generateShopInventory, SHOP_PROFILES } from '../services/magicShop/generator';
 import {
   createDefaultShopState,
@@ -47,6 +51,18 @@ import {
   loadMagicShopState,
   saveMagicShopState,
 } from '../services/magicShop/storage';
+import {
+  buildMagicShopSharePath,
+  buildMagicShopPath,
+  MAGIC_SHOP_LINK_VISIBILITY_MESSAGE,
+  resolveMagicShopRouteSelection,
+} from '../services/magicShop/routing';
+import {
+  fetchSharedMagicShopState,
+  publishMagicShopState,
+  ShareNotFoundError,
+} from '../services/magicShop/share';
+import ItemLibraryModal from '../components/ItemLibraryModal';
 
 const RARITY_OPTIONS: MagicRarity[] = [
   'common',
@@ -260,29 +276,55 @@ function RuleEditor({
 }
 
 export default function MagicItemShop() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const items = useMemo(() => getNormalizedMagicItems(), []);
+  const params = useParams<{ shareId?: string; campaignId?: string; townId?: string; shopId?: string }>();
+  const isSharedRoute = Boolean(params.shareId);
 
   const [state, setState] = useState(() => loadMagicShopState());
+  const [sharedState, setSharedState] = useState<MagicShopState | null>(null);
+  const [shareLink, setShareLink] = useState('');
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [sharedLoadError, setSharedLoadError] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isLoadingSharedState, setIsLoadingSharedState] = useState(false);
+  const activeState = sharedState ?? state;
+  const items = useMemo(() => getAllItems(activeState.customItems), [activeState.customItems]);
   const [campaignName, setCampaignName] = useState('');
   const [townName, setTownName] = useState('');
   const [shopName, setShopName] = useState('');
   const [shopProfileId, setShopProfileId] = useState<ShopNode['profileId']>('trade_town');
   const [importError, setImportError] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const selectedCampaign = state.campaigns.find((campaign) => campaign.id === state.selectedCampaignId) ?? null;
-  const selectedTown = state.towns.find((town) => town.id === state.selectedTownId) ?? null;
-  const selectedShop = state.shops.find((shop) => shop.id === state.selectedShopId) ?? null;
+  const routeSelection = useMemo(
+    () =>
+      resolveMagicShopRouteSelection(activeState, {
+        shareId: params.shareId,
+        campaignId: params.campaignId,
+        townId: params.townId,
+        shopId: params.shopId,
+      }),
+    [activeState, params.campaignId, params.shareId, params.shopId, params.townId],
+  );
+
+  const selectedCampaignId = routeSelection.selection.campaignId;
+  const selectedTownId = routeSelection.selection.townId;
+  const selectedShopId = routeSelection.selection.shopId;
+
+  const selectedCampaign = activeState.campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
+  const selectedTown = activeState.towns.find((town) => town.id === selectedTownId) ?? null;
+  const selectedShop = activeState.shops.find((shop) => shop.id === selectedShopId) ?? null;
 
   const campaignTowns = useMemo(
-    () => state.towns.filter((town) => town.campaignId === state.selectedCampaignId),
-    [state.towns, state.selectedCampaignId],
+    () => activeState.towns.filter((town) => town.campaignId === selectedCampaignId),
+    [activeState.towns, selectedCampaignId],
   );
 
   const townShops = useMemo(
-    () => state.shops.filter((shop) => shop.townId === state.selectedTownId),
-    [state.shops, state.selectedTownId],
+    () => activeState.shops.filter((shop) => shop.townId === selectedTownId),
+    [activeState.shops, selectedTownId],
   );
 
   const availableTypes = useMemo(
@@ -297,10 +339,80 @@ export default function MagicItemShop() {
     () => Array.from(new Set(items.map((item) => item.source))).sort(),
     [items],
   );
+  const selectedPath = useMemo(
+    () =>
+      buildMagicShopPath({
+        campaignId: selectedCampaignId,
+        townId: selectedTownId,
+        shopId: selectedShopId,
+      }),
+    [selectedCampaignId, selectedShopId, selectedTownId],
+  );
+  const directShopLink = useMemo(() => {
+    if (!selectedShop) {
+      return '';
+    }
+
+    if (typeof window === 'undefined') {
+      return selectedPath;
+    }
+
+    return `${window.location.origin}${selectedPath}`;
+  }, [selectedPath, selectedShop]);
+
+  useEffect(() => {
+    if (!params.shareId) {
+      setSharedState(null);
+      setSharedLoadError(null);
+      setIsLoadingSharedState(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingSharedState(true);
+    setSharedLoadError(null);
+
+    void fetchSharedMagicShopState(params.shareId)
+      .then((loadedState) => {
+        if (!isCancelled) {
+          setSharedState(loadedState);
+        }
+      })
+      .catch((error: unknown) => {
+        if (isCancelled) return;
+        const message =
+          error instanceof ShareNotFoundError
+            ? 'This shared snapshot does not exist anymore.'
+            : 'Unable to load this shared snapshot right now.';
+        setSharedState(null);
+        setSharedLoadError(message);
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoadingSharedState(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [params.shareId]);
 
   useEffect(() => {
     saveMagicShopState(state);
   }, [state]);
+
+  useEffect(() => {
+    if (isSharedRoute) {
+      return;
+    }
+
+    if (location.pathname === selectedPath) {
+      return;
+    }
+
+    navigate(selectedPath, { replace: true });
+  }, [isSharedRoute, location.pathname, navigate, selectedPath]);
 
   function updateShop(updater: (shop: ShopNode) => ShopNode) {
     if (!selectedShop) return;
@@ -326,7 +438,7 @@ export default function MagicItemShop() {
 
   function addTown() {
     const name = townName.trim();
-    const campaignId = state.selectedCampaignId;
+    const campaignId = selectedCampaignId;
     if (!name || !campaignId) return;
     const id = createId('town');
     setState((prev) => ({
@@ -340,7 +452,7 @@ export default function MagicItemShop() {
 
   function addShop() {
     const name = shopName.trim();
-    const townId = state.selectedTownId;
+    const townId = selectedTownId;
     if (!name || !townId) return;
     const id = createId('shop');
     setState((prev) => ({
@@ -375,7 +487,7 @@ export default function MagicItemShop() {
 
     const inventory = generateShopInventory({
       items,
-      globalPricing: state.user.globalPricing,
+      globalPricing: activeState.user.globalPricing,
       townPricing: selectedTown.pricing,
       shopPricing: selectedShop.pricing,
       shopProfileId: selectedShop.profileId,
@@ -387,6 +499,8 @@ export default function MagicItemShop() {
 
   function resetAll() {
     setState(createDefaultShopState());
+    setShareLink('');
+    setShareError(null);
   }
 
   function downloadExport() {
@@ -398,6 +512,40 @@ export default function MagicItemShop() {
     a.download = 'magic-shop-state.json';
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function shareSnapshot() {
+    setIsSharing(true);
+    setShareError(null);
+    try {
+      const shareId = await publishMagicShopState(state);
+      const sharedPath = buildMagicShopSharePath(shareId);
+      const nextLink =
+        typeof window === 'undefined' ? sharedPath : `${window.location.origin}${sharedPath}`;
+      setShareLink(nextLink);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to publish this snapshot.';
+      setShareError(message);
+    } finally {
+      setIsSharing(false);
+    }
+  }
+
+  function importSharedIntoLocal() {
+    if (!sharedState) return;
+    setState(sharedState);
+    setSharedState(null);
+    setSharedLoadError(null);
+    setShareError(null);
+    setShareLink('');
+    navigate(
+      buildMagicShopPath({
+        campaignId: sharedState.selectedCampaignId,
+        townId: sharedState.selectedTownId,
+        shopId: sharedState.selectedShopId,
+      }),
+      { replace: true },
+    );
   }
 
   function updateRarityFilter(rarity: MagicRarity, checked: boolean) {
@@ -430,6 +578,75 @@ export default function MagicItemShop() {
     }
   }
 
+  if (isSharedRoute) {
+    return (
+      <Box sx={{ py: 4, px: 3, maxWidth: 1300, mx: 'auto' }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+          <Button startIcon={<ArrowBackIcon />} variant="outlined" size="small" onClick={() => navigate('/')}>
+            Home
+          </Button>
+          <Typography variant="h4" fontWeight={700}>
+            🏪 Magic Item Shop
+          </Typography>
+        </Stack>
+
+        {isSharedRoute && (
+          <Alert
+            severity={sharedLoadError ? 'error' : 'info'}
+            sx={{ mb: 2 }}
+            action={
+              sharedState ? (
+                <Button color="inherit" size="small" onClick={importSharedIntoLocal}>
+                  Import to local
+                </Button>
+              ) : undefined
+            }
+          >
+            {isLoadingSharedState ? (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={16} />
+                <span>Loading shared snapshot…</span>
+              </Stack>
+            ) : sharedLoadError ? (
+              sharedLoadError
+            ) : (
+              'Viewing a shared snapshot in read-only mode.'
+            )}
+          </Alert>
+        )}
+
+        {routeSelection.unavailableNotice && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {routeSelection.unavailableNotice}
+          </Alert>
+        )}
+
+        <Paper sx={{ p: 2 }}>
+          <Stack spacing={1.5}>
+            <TextField
+              label="Campaign"
+              size="small"
+              value={selectedCampaign?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+            <TextField
+              label="Town"
+              size="small"
+              value={selectedTown?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+            <TextField
+              label="Shop"
+              size="small"
+              value={selectedShop?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ py: 4, px: 3, maxWidth: 1300, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
@@ -439,17 +656,35 @@ export default function MagicItemShop() {
         <Typography variant="h4" fontWeight={700} sx={{ flexGrow: 1 }}>
           🏪 Magic Item Shop Generator
         </Typography>
-        <Button startIcon={<DownloadIcon />} variant="outlined" onClick={downloadExport}>
+        <Button
+          startIcon={<LibraryBooksIcon />}
+          variant="outlined"
+          color="secondary"
+          onClick={() => setLibraryOpen(true)}
+          disabled={isSharedRoute}
+        >
+          Item Library ({activeState.customItems.length})
+        </Button>
+        <Button startIcon={<DownloadIcon />} variant="outlined" onClick={downloadExport} disabled={isSharedRoute}>
           Export JSON
         </Button>
         <Button
           startIcon={<FileUploadIcon />}
           variant="outlined"
           onClick={() => fileInputRef.current?.click()}
+          disabled={isSharedRoute}
         >
           Import JSON
         </Button>
-        <Button startIcon={<RefreshIcon />} color="warning" variant="outlined" onClick={resetAll}>
+        <Button
+          startIcon={<ShareIcon />}
+          variant="outlined"
+          onClick={() => void shareSnapshot()}
+          disabled={isSharing || isSharedRoute}
+        >
+          {isSharing ? 'Publishing…' : 'Share Snapshot'}
+        </Button>
+        <Button startIcon={<RefreshIcon />} color="warning" variant="outlined" onClick={resetAll} disabled={isSharedRoute}>
           Reset
         </Button>
         <input
@@ -470,13 +705,67 @@ export default function MagicItemShop() {
           }}
         />
       </Stack>
+
+      <ItemLibraryModal
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        customItems={activeState.customItems}
+        onChange={(customItems) => setState((prev) => ({ ...prev, customItems }))}
+      />
+
       {importError && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setImportError(null)}>
           {importError}
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      {shareError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setShareError(null)}>
+          {shareError}
+        </Alert>
+      )}
+
+      {shareLink && (
+        <TextField
+          label="Shared snapshot link"
+          size="small"
+          fullWidth
+          value={shareLink}
+          slotProps={{ input: { readOnly: true } }}
+          sx={{ mb: 2 }}
+        />
+      )}
+
+      {isSharedRoute && (
+        <Alert
+          severity={sharedLoadError ? 'error' : 'info'}
+          sx={{ mb: 2 }}
+          action={
+            sharedState ? (
+              <Button color="inherit" size="small" onClick={importSharedIntoLocal}>
+                Import to local
+              </Button>
+            ) : undefined
+          }
+        >
+          {isLoadingSharedState ? (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <CircularProgress size={16} />
+              <span>Loading shared snapshot…</span>
+            </Stack>
+          ) : sharedLoadError ? (
+            sharedLoadError
+          ) : (
+            'Viewing a shared snapshot in read-only mode.'
+          )}
+        </Alert>
+      )}
+
+      <Grid
+        container
+        spacing={3}
+        sx={isSharedRoute ? { pointerEvents: 'none', opacity: 0.8 } : undefined}
+      >
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={2}>
             <Paper sx={{ p: 2 }}>
@@ -486,6 +775,14 @@ export default function MagicItemShop() {
               <Alert severity="info" sx={{ mb: 2 }}>
                 Hierarchy: User → Campaign → Town → Shop
               </Alert>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                {MAGIC_SHOP_LINK_VISIBILITY_MESSAGE}
+              </Alert>
+              {routeSelection.unavailableNotice && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  {routeSelection.unavailableNotice}
+                </Alert>
+              )}
 
               <Typography variant="subtitle2" paddingBottom={1}>Campaign</Typography>
               <FormControl fullWidth size="small" sx={{ mb: 1 }}>
@@ -493,7 +790,7 @@ export default function MagicItemShop() {
                 <Select
                   labelId="campaign-select-label"
                   label="Campaign"
-                  value={state.selectedCampaignId ?? ''}
+                  value={selectedCampaignId ?? ''}
                   onChange={(e) =>
                     setState((prev) => ({
                       ...prev,
@@ -503,7 +800,7 @@ export default function MagicItemShop() {
                     }))
                   }
                 >
-                  {state.campaigns.map((campaign) => (
+                  {activeState.campaigns.map((campaign) => (
                     <MenuItem key={campaign.id} value={campaign.id}>
                       {campaign.name}
                     </MenuItem>
@@ -529,9 +826,14 @@ export default function MagicItemShop() {
                 <Select
                   labelId="town-select-label"
                   label="Town"
-                  value={state.selectedTownId ?? ''}
+                  value={selectedTownId ?? ''}
                   onChange={(e) =>
-                    setState((prev) => ({ ...prev, selectedTownId: e.target.value, selectedShopId: null }))
+                    setState((prev) => ({
+                      ...prev,
+                      selectedCampaignId: selectedCampaign?.id ?? prev.selectedCampaignId,
+                      selectedTownId: e.target.value,
+                      selectedShopId: null,
+                    }))
                   }
                 >
                   {campaignTowns.map((town) => (
@@ -560,7 +862,7 @@ export default function MagicItemShop() {
                 <Select
                   labelId="shop-select-label"
                   label="Shop"
-                  value={state.selectedShopId ?? ''}
+                  value={selectedShopId ?? ''}
                   onChange={(e) => setState((prev) => ({ ...prev, selectedShopId: e.target.value }))}
                 >
                   {townShops.map((shop) => (
@@ -597,6 +899,16 @@ export default function MagicItemShop() {
                   Add
                 </Button>
               </Stack>
+              {selectedShop && (
+                 <TextField
+                   label="Direct shop link"
+                   size="small"
+                   fullWidth
+                   value={directShopLink}
+                   slotProps={{ input: { readOnly: true } }}
+                   sx={{ mt: 2 }}
+                 />
+              )}
             </Paper>
 
             {selectedShop && (
@@ -702,6 +1014,56 @@ export default function MagicItemShop() {
                 </Stack>
 
                 <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                  <InputLabel id="type-filter">Item Type Filter</InputLabel>
+                  <Select
+                    labelId="type-filter"
+                    label="Item Type Filter"
+                    multiple
+                    value={selectedShop.generationRules.itemTypes}
+                    onChange={(e) =>
+                      updateShop((shop) => ({
+                        ...shop,
+                        generationRules: {
+                          ...shop.generationRules,
+                          itemTypes: e.target.value as string[],
+                        },
+                      }))
+                    }
+                  >
+                    {availableTypes.map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                  <InputLabel id="tag-filter">Tag Filter</InputLabel>
+                  <Select
+                    labelId="tag-filter"
+                    label="Tag Filter"
+                    multiple
+                    value={selectedShop.generationRules.tags}
+                    onChange={(e) =>
+                      updateShop((shop) => ({
+                        ...shop,
+                        generationRules: {
+                          ...shop.generationRules,
+                          tags: e.target.value as string[],
+                        },
+                      }))
+                    }
+                  >
+                    {availableTags.map((tag) => (
+                      <MenuItem key={tag} value={tag}>
+                        {tag}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                   <InputLabel id="source-filter">Source Filter</InputLabel>
                   <Select
                     labelId="source-filter"
@@ -743,7 +1105,7 @@ export default function MagicItemShop() {
           <Stack spacing={2}>
             <RuleEditor
               title="Global Price Overrides"
-              policy={state.user.globalPricing}
+              policy={activeState.user.globalPricing}
               availableTypes={availableTypes}
               availableTags={availableTags}
               onAddRule={(rule) =>

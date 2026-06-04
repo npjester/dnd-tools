@@ -1,4 +1,5 @@
 import type {
+  MagicItem,
   MagicShopState,
   PricingPolicy,
   ShopGenerationRules,
@@ -50,6 +51,7 @@ export function createDefaultShopState(): MagicShopState {
     campaigns: [{ id: defaultCampaignId, userId: 'user-default', name: 'Default Campaign' }],
     towns: [{ id: defaultTownId, campaignId: defaultCampaignId, name: 'Starter Town', pricing: defaultPricingPolicy() }],
     shops: [defaultShop],
+    customItems: [],
     selectedCampaignId: defaultCampaignId,
     selectedTownId: defaultTownId,
     selectedShopId: defaultShopId,
@@ -126,6 +128,23 @@ export function importMagicShopState(serialized: string): MagicShopState {
     ...normalized.user,
     globalPricing: normalized.user.globalPricing ?? defaultPricingPolicy(),
   };
+
+  // Ensure custom items have all required fields added in later schema versions
+  normalized.customItems = (normalized.customItems ?? []).map(
+    (item: Partial<MagicItem> & { id: string; name: string }): MagicItem => ({
+      description: '',
+      tags: [],
+      rarity: 'varies',
+      type: 'wondrous item',
+      source: 'CUSTOM',
+      basePriceGp: 0,
+      ...item,
+      metadata: {
+        sourceName: item.metadata?.sourceName ?? 'CUSTOM',
+        importedFrom: item.metadata?.importedFrom ?? 'manual',
+      },
+    }),
+  );
 
   return normalized;
 }

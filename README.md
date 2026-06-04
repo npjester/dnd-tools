@@ -12,6 +12,11 @@ Simulate a horde of identical creatures making attacks against a single target. 
 
 Results include total hits, misses, critical hits, hit rate %, total damage, average damage per hit, and a colour-coded individual-roll breakdown.
 
+### 🏪 Magic Item Shop Sharing
+- Publish a full in-memory snapshot of your current magic shop state
+- Share a generated URL so other browsers can view that snapshot without importing local JSON
+- Optionally import a viewed shared snapshot into your own local browser state
+
 ## Getting Started
 
 ```bash
@@ -20,6 +25,9 @@ npm install
 
 # Start the dev server
 npm run dev
+
+# In another terminal, run the temporary in-memory share server
+npm run share:server
 
 # Build for production
 npm run build
