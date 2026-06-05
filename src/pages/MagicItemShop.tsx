@@ -580,6 +580,75 @@ export default function MagicItemShop() {
     }
   }
 
+  if (isSharedRoute) {
+    return (
+      <Box sx={{ py: 4, px: 3, maxWidth: 1300, mx: 'auto' }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+          <Button startIcon={<ArrowBackIcon />} variant="outlined" size="small" onClick={() => navigate('/')}>
+            Home
+          </Button>
+          <Typography variant="h4" fontWeight={700}>
+            🏪 Magic Item Shop
+          </Typography>
+        </Stack>
+
+        {isSharedRoute && (
+          <Alert
+            severity={sharedLoadError ? 'error' : 'info'}
+            sx={{ mb: 2 }}
+            action={
+              sharedState ? (
+                <Button color="inherit" size="small" onClick={importSharedIntoLocal}>
+                  Import to local
+                </Button>
+              ) : undefined
+            }
+          >
+            {isLoadingSharedState ? (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={16} />
+                <span>Loading shared snapshot…</span>
+              </Stack>
+            ) : sharedLoadError ? (
+              sharedLoadError
+            ) : (
+              'Viewing a shared snapshot in read-only mode.'
+            )}
+          </Alert>
+        )}
+
+        {routeSelection.unavailableNotice && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {routeSelection.unavailableNotice}
+          </Alert>
+        )}
+
+        <Paper sx={{ p: 2 }}>
+          <Stack spacing={1.5}>
+            <TextField
+              label="Campaign"
+              size="small"
+              value={selectedCampaign?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+            <TextField
+              label="Town"
+              size="small"
+              value={selectedTown?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+            <TextField
+              label="Shop"
+              size="small"
+              value={selectedShop?.name ?? 'Not selected'}
+              slotProps={{ input: { readOnly: true } }}
+            />
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ py: 4, px: 3, maxWidth: 1300, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
