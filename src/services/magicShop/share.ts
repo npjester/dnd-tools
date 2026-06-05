@@ -17,7 +17,7 @@ export class ShareNotFoundError extends Error {
 }
 
 // Create a minimal state that only includes the shop and its inventory
-function createMinimalShopState(state: MagicShopState): MagicShopState {
+export function createMinimalShopState(state: MagicShopState): MagicShopState {
   if (!state.selectedShopId) {
     return state;
   }
