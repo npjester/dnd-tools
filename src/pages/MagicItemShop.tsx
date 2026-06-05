@@ -63,6 +63,7 @@ import {
   ShareNotFoundError,
 } from '../services/magicShop/share';
 import ItemLibraryModal from '../components/ItemLibraryModal';
+import AddItemModal from '../components/AddItemModal';
 
 const RARITY_OPTIONS: MagicRarity[] = [
   'common',
@@ -296,6 +297,7 @@ export default function MagicItemShop() {
   const [shopProfileId, setShopProfileId] = useState<ShopNode['profileId']>('trade_town');
   const [importError, setImportError] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [addItemOpen, setAddItemOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const routeSelection = useMemo(
@@ -596,6 +598,15 @@ export default function MagicItemShop() {
         >
           Item Library ({activeState.customItems.length})
         </Button>
+        <Button
+          startIcon={<AddIcon />}
+          variant="outlined"
+          color="primary"
+          onClick={() => setAddItemOpen(true)}
+          disabled={isSharedRoute}
+        >
+          Add Item
+        </Button>
         <Button startIcon={<DownloadIcon />} variant="outlined" onClick={downloadExport} disabled={isSharedRoute}>
           Export JSON
         </Button>
@@ -642,6 +653,18 @@ export default function MagicItemShop() {
         onClose={() => setLibraryOpen(false)}
         customItems={activeState.customItems}
         onChange={(customItems) => setState((prev) => ({ ...prev, customItems }))}
+      />
+
+      <AddItemModal
+        open={addItemOpen}
+        onClose={() => setAddItemOpen(false)}
+        onAddItem={(item) => {
+          setState((prev) => ({
+            ...prev,
+            customItems: [...prev.customItems, item],
+          }));
+          setAddItemOpen(false);
+        }}
       />
 
       {importError && (
