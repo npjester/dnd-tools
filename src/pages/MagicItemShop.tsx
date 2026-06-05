@@ -644,6 +644,79 @@ export default function MagicItemShop() {
               slotProps={{ input: { readOnly: true } }}
             />
           </Stack>
+          {/* TODO: refactor inventory display into a separate component and reuse here for better readability */}
+          <Typography variant="h6" sx={{ mb: 1 }}>
+                Inventory
+              </Typography>
+
+              {!selectedShop ? (
+                <Typography color="text.secondary">Select a shop to generate inventory.</Typography>
+              ) : selectedShop.inventory.length === 0 ? (
+                <Typography color="text.secondary">No generated inventory yet.</Typography>
+              ) : (
+                <>
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 2 }}>
+                    <Chip label={`Items: ${selectedShop.inventory.length}`} color="primary" />
+                    <Chip
+                      label={`Total Value: ${selectedShop.inventory.reduce((sum, entry) => sum + entry.totalPriceGp, 0).toFixed(2)} gp`}
+                      color="secondary"
+                    />
+                  </Stack>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Item</TableCell>
+                          <TableCell>Rarity</TableCell>
+                          <TableCell>Type</TableCell>
+                          <TableCell align="right">Qty</TableCell>
+                          <TableCell align="right">Base (gp)</TableCell>
+                          <TableCell align="right">Effective (gp)</TableCell>
+                          <TableCell align="right">Total (gp)</TableCell>
+                          <TableCell>Source</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {selectedShop.inventory.map((entry) => (
+                          <TableRow key={entry.itemId}>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600}>
+                                {entry.itemName}
+                              </Typography>
+                              {entry.appliedOverrides.length > 0 && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {entry.appliedOverrides.map((rule) => `${rule.scope}:${rule.label}`).join(', ')}
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>{entry.rarity}</TableCell>
+                            <TableCell>{entry.type}</TableCell>
+                            <TableCell align="right">{entry.quantity}</TableCell>
+                            <TableCell align="right">{entry.baseUnitPriceGp.toFixed(2)}</TableCell>
+                            <TableCell align="right">{entry.effectiveUnitPriceGp.toFixed(2)}</TableCell>
+                            <TableCell align="right">{entry.totalPriceGp.toFixed(2)}</TableCell>
+                            <TableCell>
+                              <Chip
+                                size="small"
+                                label={entry.priceSource}
+                                color={
+                                  entry.priceSource === 'shop'
+                                    ? 'secondary'
+                                    : entry.priceSource === 'town'
+                                      ? 'warning'
+                                      : entry.priceSource === 'global'
+                                        ? 'info'
+                                        : 'default'
+                                }
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </>
+              )}
         </Paper>
       </Box>
     );
