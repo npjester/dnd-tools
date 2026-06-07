@@ -64,6 +64,7 @@ import {
 } from '../services/magicShop/share';
 import ItemLibraryModal from '../components/ItemLibraryModal';
 import AddItemModal from '../components/AddItemModal';
+import AddToInventoryModal from '../components/AddToInventoryModal';
 
 const RARITY_OPTIONS: MagicRarity[] = [
   'common',
@@ -298,6 +299,7 @@ export default function MagicItemShop() {
   const [importError, setImportError] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
+  const [addToInventoryOpen, setAddToInventoryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const routeSelection = useMemo(
@@ -497,6 +499,29 @@ export default function MagicItemShop() {
     });
 
     updateShop((shop) => ({ ...shop, inventory }));
+  }
+
+  function addToInventory(item: MagicItem) {
+    if (!selectedShop) return;
+    
+    // Create a new inventory entry for the item
+    const newItemEntry = {
+      itemId: item.id,
+      itemName: item.name,
+      rarity: item.rarity,
+      type: item.type,
+      baseUnitPriceGp: item.basePriceGp,
+      effectiveUnitPriceGp: item.basePriceGp, // Will be updated by pricing rules
+      totalPriceGp: item.basePriceGp,
+      quantity: 1,
+      appliedOverrides: [],
+      priceSource: 'custom' as const,
+    };
+    
+    updateShop((shop) => ({
+      ...shop,
+      inventory: [...shop.inventory, newItemEntry],
+    }));
   }
 
   function resetAll() {
@@ -749,6 +774,15 @@ export default function MagicItemShop() {
         >
           Add Item
         </Button>
+        <Button
+          startIcon={<AddIcon />}
+          variant="outlined"
+          color="secondary"
+          onClick={() => setAddToInventoryOpen(true)}
+          disabled={isSharedRoute || !selectedShop}
+        >
+          Add to Inventory
+        </Button>
         <Button startIcon={<DownloadIcon />} variant="outlined" onClick={downloadExport} disabled={isSharedRoute}>
           Export JSON
         </Button>
@@ -807,6 +841,13 @@ export default function MagicItemShop() {
           }));
           setAddItemOpen(false);
         }}
+      />
+
+      <AddToInventoryModal
+        open={addToInventoryOpen}
+        onClose={() => setAddToInventoryOpen(false)}
+        onAddItem={addToInventory}
+        items={items}
       />
 
       {importError && (
