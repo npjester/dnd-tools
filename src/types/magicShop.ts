@@ -34,7 +34,7 @@ export interface MagicItem {
 }
 
 export type PriceRuleAction = 'set' | 'multiplier' | 'none';
-export type PriceScope = 'global' | 'town' | 'shop';
+export type PriceScope = 'global' | 'town' | 'shop' | 'custom';
 
 export interface PriceOverrideRule {
   id: string;
