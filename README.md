@@ -36,8 +36,10 @@ npm run build
 npm test
 ```
 
-## Tech Stack
-- [Vite](https://vite.dev/) + [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- [Material UI v6](https://mui.com/) (dark theme)
-- [React Router v7](https://reactrouter.com/)
-- [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)
+## Deployment to Vercel
+
+When deploying to Vercel, note that the share server runs as a separate Node.js process. To deploy properly with Vercel, you have two options:
+1. Deploy with a separate backend service that runs the share server on port 8787
+2. Modify your deployment configuration to run both the frontend and backend together
+
+The application will automatically proxy requests to `/api/magic-shop/shares` to the share server running on port 8787, so ensure this is available in your deployment environment. For Vercel deployments, you may need to use a custom serverless function or separate hosting for the share functionality to work properly.
